@@ -1,214 +1,67 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>環境センサーダッシュボード</title>
+    
+    <!-- Chart.js ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            color: white;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .current-values {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .value-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .value-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .value-card .icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        .value-card .label {
-            color: #666;
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }
-
-        .value-card .value {
-            color: #333;
-            font-size: 2em;
-            font-weight: bold;
-        }
-
-        .value-card .unit {
-            color: #999;
-            font-size: 0.8em;
-        }
-
-        .value-card.temperature .icon {
-            color: #ff6b6b;
-        }
-
-        .value-card.humidity .icon {
-            color: #4ecdc4;
-        }
-
-        .value-card.co2 .icon {
-            color: #95e1d3;
-        }
-
-        .value-card.timestamp .icon {
-            color: #ffd93d;
-        }
-
-        .charts-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .chart-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .chart-card h3 {
-            color: #333;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 300px;
-        }
-
-        .status {
-            text-align: center;
-            color: white;
-            margin-top: 20px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .status.error {
-            background: rgba(255, 0, 0, 0.3);
-        }
-
-        .controls {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .controls button {
-            background: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 0 5px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s ease;
-        }
-
-        .controls button:hover {
-            background: #f0f0f0;
-            transform: scale(1.05);
-        }
-
-        .controls button.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .loading {
-            text-align: center;
-            color: white;
-            font-size: 1.2em;
-            padding: 50px;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
-            }
-
-            .charts-container {
-                grid-template-columns: 1fr;
-            }
-
-            .current-values {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
+    
+    <!-- カスタムスタイル -->
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div class="container">
-        <h1>🌡️ 環境センサーダッシュボード</h1>
+        <header>
+            <h1>環境センサーダッシュボード</h1>
+        </header>
 
+        <!-- 現在値エリア -->
         <div class="current-values">
             <div class="value-card temperature">
-                <div class="icon">🌡️</div>
-                <div class="label">温度</div>
-                <div class="value" id="current-temp">--</div>
-                <div class="unit">°C</div>
+                <div class="header">
+                    <span>温度</span>
+                </div>
+                <div class="value-wrapper">
+                    <span class="value" id="current-temp">--</span>
+                    <span class="unit">°C</span>
+                </div>
             </div>
+
             <div class="value-card humidity">
-                <div class="icon">💧</div>
-                <div class="label">湿度</div>
-                <div class="value" id="current-humidity">--</div>
-                <div class="unit">%</div>
+                <div class="header">
+                    <span>湿度</span>
+                </div>
+                <div class="value-wrapper">
+                    <span class="value" id="current-humidity">--</span>
+                    <span class="unit">%</span>
+                </div>
             </div>
+
             <div class="value-card co2">
-                <div class="icon">🌫️</div>
-                <div class="label">CO2濃度</div>
-                <div class="value" id="current-co2">--</div>
-                <div class="unit">ppm</div>
+                <div class="header">
+                    <span>CO2濃度</span>
+                </div>
+                <div class="value-wrapper">
+                    <span class="value" id="current-co2">--</span>
+                    <span class="unit">ppm</span>
+                </div>
             </div>
+
             <div class="value-card timestamp">
-                <div class="icon">🕐</div>
-                <div class="label">最終更新</div>
-                <div class="value" id="current-time" style="font-size: 1.2em;">--:--:--</div>
-                <div class="unit" id="current-date">----/--/--</div>
+                <div class="header">
+                    <span>最終更新</span>
+                </div>
+                <div class="value-container">
+                    <div class="value" id="current-time">--:--:--</div>
+                    <div class="unit" id="current-date">----/--/--</div>
+                </div>
             </div>
         </div>
 
+        <!-- コントロールボタン -->
         <div class="controls">
             <button class="active" onclick="changeTimeRange(1)">1時間</button>
             <button onclick="changeTimeRange(6)">6時間</button>
@@ -216,238 +69,34 @@
             <button onclick="changeTimeRange(168)">7日間</button>
         </div>
 
+        <!-- グラフエリア -->
         <div class="charts-container">
             <div class="chart-card">
-                <h3>温度 (°C)</h3>
+                <h3>温度推移</h3>
                 <div class="chart-wrapper">
                     <canvas id="tempChart"></canvas>
                 </div>
             </div>
             <div class="chart-card">
-                <h3>湿度 (%)</h3>
+                <h3>湿度推移</h3>
                 <div class="chart-wrapper">
                     <canvas id="humidityChart"></canvas>
                 </div>
             </div>
             <div class="chart-card">
-                <h3>CO2濃度 (ppm)</h3>
+                <h3>CO2濃度推移</h3>
                 <div class="chart-wrapper">
                     <canvas id="co2Chart"></canvas>
                 </div>
             </div>
         </div>
 
-        <div class="status" id="status">
-            データ読み込み中...
+        <div class="status-bar" id="status">
+            読み込み中...
         </div>
     </div>
 
-    <script>
-        // グローバル変数
-        let tempChart, humidityChart, co2Chart;
-        let currentTimeRange = 1; // デフォルト1時間
-        let updateInterval;
-
-        // APIエンドポイント設定（環境に応じて変更してください）
-        const API_BASE_URL = window.location.origin;
-        const API_CURRENT = `${API_BASE_URL}/api/sensor/current`;
-        const API_HISTORY = `${API_BASE_URL}/api/sensor/history`;
-
-        // Chart.jsの共通設定
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        displayFormats: {
-                            hour: 'HH:mm',
-                            day: 'MM/dd'
-                        }
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                y: {
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                }
-            }
-        };
-
-        // グラフ初期化
-        function initCharts() {
-            const tempCtx = document.getElementById('tempChart').getContext('2d');
-            tempChart = new Chart(tempCtx, {
-                type: 'line',
-                data: {
-                    datasets: [{
-                        label: '温度',
-                        data: [],
-                        borderColor: '#ff6b6b',
-                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: chartOptions
-            });
-
-            const humidityCtx = document.getElementById('humidityChart').getContext('2d');
-            humidityChart = new Chart(humidityCtx, {
-                type: 'line',
-                data: {
-                    datasets: [{
-                        label: '湿度',
-                        data: [],
-                        borderColor: '#4ecdc4',
-                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: chartOptions
-            });
-
-            const co2Ctx = document.getElementById('co2Chart').getContext('2d');
-            co2Chart = new Chart(co2Ctx, {
-                type: 'line',
-                data: {
-                    datasets: [{
-                        label: 'CO2',
-                        data: [],
-                        borderColor: '#95e1d3',
-                        backgroundColor: 'rgba(149, 225, 211, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: chartOptions
-            });
-        }
-
-        // 現在値の更新
-        async function updateCurrentValues() {
-            try {
-                // モックデータ（実際のAPIに置き換えてください）
-                const data = generateMockCurrentData();
-                
-                // 実際のAPI呼び出しの例：
-                // const response = await fetch(API_CURRENT);
-                // const data = await response.json();
-
-                document.getElementById('current-temp').textContent = data.temperature.toFixed(1);
-                document.getElementById('current-humidity').textContent = data.humidity.toFixed(1);
-                document.getElementById('current-co2').textContent = Math.round(data.co2);
-
-                const date = new Date(data.timestamp);
-                document.getElementById('current-time').textContent = date.toLocaleTimeString('ja-JP');
-                document.getElementById('current-date').textContent = date.toLocaleDateString('ja-JP');
-
-                document.getElementById('status').textContent = '正常に動作中';
-                document.getElementById('status').classList.remove('error');
-            } catch (error) {
-                console.error('データ取得エラー:', error);
-                document.getElementById('status').textContent = 'データ取得エラー';
-                document.getElementById('status').classList.add('error');
-            }
-        }
-
-        // 履歴データの更新
-        async function updateHistoryData() {
-            try {
-                // モックデータ（実際のAPIに置き換えてください）
-                const data = generateMockHistoryData(currentTimeRange);
-                
-                // 実際のAPI呼び出しの例：
-                // const response = await fetch(`${API_HISTORY}?hours=${currentTimeRange}`);
-                // const data = await response.json();
-
-                // グラフデータの更新
-                tempChart.data.datasets[0].data = data.map(d => ({ x: d.timestamp, y: d.temperature }));
-                humidityChart.data.datasets[0].data = data.map(d => ({ x: d.timestamp, y: d.humidity }));
-                co2Chart.data.datasets[0].data = data.map(d => ({ x: d.timestamp, y: d.co2 }));
-
-                tempChart.update();
-                humidityChart.update();
-                co2Chart.update();
-            } catch (error) {
-                console.error('履歴データ取得エラー:', error);
-            }
-        }
-
-        // 時間範囲変更
-        function changeTimeRange(hours) {
-            currentTimeRange = hours;
-            
-            // ボタンのアクティブ状態を更新
-            document.querySelectorAll('.controls button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            updateHistoryData();
-        }
-
-        // モックデータ生成（開発・テスト用）
-        function generateMockCurrentData() {
-            return {
-                temperature: 20 + Math.random() * 10,
-                humidity: 40 + Math.random() * 30,
-                co2: 400 + Math.random() * 600,
-                timestamp: new Date().toISOString()
-            };
-        }
-
-        function generateMockHistoryData(hours) {
-            const data = [];
-            const now = new Date();
-            const points = Math.min(hours * 6, 200); // 10分間隔、最大200ポイント
-
-            for (let i = points; i >= 0; i--) {
-                const time = new Date(now - i * 10 * 60 * 1000);
-                data.push({
-                    timestamp: time.toISOString(),
-                    temperature: 22 + Math.sin(i / 10) * 3 + Math.random() * 2,
-                    humidity: 55 + Math.cos(i / 8) * 10 + Math.random() * 5,
-                    co2: 600 + Math.sin(i / 15) * 200 + Math.random() * 100
-                });
-            }
-
-            return data;
-        }
-
-        // 初期化
-        async function init() {
-            initCharts();
-            await updateCurrentValues();
-            await updateHistoryData();
-
-            // 30秒ごとに更新
-            updateInterval = setInterval(async () => {
-                await updateCurrentValues();
-                await updateHistoryData();
-            }, 30000);
-        }
-
-        // ページ読み込み時に実行
-        window.addEventListener('load', init);
-
-        // ページを離れる時にインターバルをクリア
-        window.addEventListener('beforeunload', () => {
-            if (updateInterval) {
-                clearInterval(updateInterval);
-            }
-        });
-    </script>
+    <!-- カスタムスクリプト -->
+    <script src="script.js"></script>
 </body>
-
 </html>
