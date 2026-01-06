@@ -4,8 +4,7 @@ let currentTimeRange = 1; // デフォルト1時間
 let updateInterval;
 
 // API設定
-const API_BASE_URL = window.location.origin;
-// 実際の環境に合わせてパスを調整してください
+const API_BASE_URL = 'https://nodered.aosy-minipc.theworkpc.com';
 const API_CURRENT = `${API_BASE_URL}/api/sensor/current`;
 const API_HISTORY = `${API_BASE_URL}/api/sensor/history`;
 
@@ -95,12 +94,30 @@ function initCharts() {
 // 現在値更新
 async function updateCurrentValues() {
     try {
-        const data = generateMockCurrentData(); // モック
+        const response = await fetch(API_CURRENT);
+        if (!response.ok) {
+            throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
         
-        // 値の更新
-        updateValue('current-temp', data.temperature.toFixed(1));
-        updateValue('current-humidity', data.humidity.toFixed(1));
-        updateValue('current-co2', Math.round(data.co2));
+        // データが取得できた場合のみ値を更新
+        if (data.temperature !== null && data.temperature !== undefined) {
+            updateValue('current-temp', data.temperature.toFixed(1));
+        } else {
+            updateValue('current-temp', 'データなし');
+        }
+        
+        if (data.humidity !== null && data.humidity !== undefined) {
+            updateValue('current-humidity', data.humidity.toFixed(1));
+        } else {
+            updateValue('current-humidity', 'データなし');
+        }
+        
+        if (data.co2 !== null && data.co2 !== undefined) {
+            updateValue('current-co2', Math.round(data.co2));
+        } else {
+            updateValue('current-co2', 'データなし');
+        }
 
         // 時刻更新
         const date = new Date(data.timestamp);
@@ -109,8 +126,12 @@ async function updateCurrentValues() {
 
         updateStatus('正常稼働中', false);
     } catch (error) {
-        console.error('Fetch error:', error);
-        updateStatus('データ取得エラー', true);
+        console.error('データ取得エラー:', error);
+        // エラー時は明確に「取得失敗」と表示
+        updateValue('current-temp', '取得失敗');
+        updateValue('current-humidity', '取得失敗');
+        updateValue('current-co2', '取得失敗');
+        updateStatus(`エラー: ${error.message}`, true);
     }
 }
 
@@ -131,10 +152,22 @@ function updateStatus(msg, isError) {
 // 履歴データ更新
 async function updateHistoryData() {
     try {
-        const data = generateMockHistoryData(currentTimeRange); // モック
+        const response = await fetch(`${API_HISTORY}?hours=${currentTimeRange}`);
+        if (!response.ok) {
+            throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+
+        // データが配列でない、または空の場合
+        if (!Array.isArray(data) || data.length === 0) {
+            throw new Error('履歴データが存在しません');
+        }
 
         const updateDataset = (chart, key) => {
-            chart.data.datasets[0].data = data.map(d => ({ x: d.timestamp, y: d[key] }));
+            chart.data.datasets[0].data = data.map(d => ({ 
+                x: new Date(d.timestamp), 
+                y: d[key] 
+            })).filter(d => d.y !== null && d.y !== undefined); // null/undefined値を除外
             chart.update('none'); // アニメーションなしで更新
         };
 
@@ -143,7 +176,13 @@ async function updateHistoryData() {
         updateDataset(co2Chart, 'co2');
 
     } catch (error) {
-        console.error('History fetch error:', error);
+        console.error('履歴データ取得エラー:', error);
+        // エラー時はグラフをクリア
+        [tempChart, humidityChart, co2Chart].forEach(chart => {
+            chart.data.datasets[0].data = [];
+            chart.update('none');
+        });
+        updateStatus(`履歴データエラー: ${error.message}`, true);
     }
 }
 
@@ -160,40 +199,31 @@ window.changeTimeRange = function(hours) {
         event.target.classList.add('active');
     }
 
+    // X軸の時間表示フォーマットを更新
+    const timeFormat = hours <= 12 ? 'HH:mm' : 'MM/dd HH:mm';
+    const timeUnit = hours <= 12 ? 'hour' : 'day';
+    
+    [tempChart, humidityChart, co2Chart].forEach(chart => {
+        chart.options.scales.x.time.unit = timeUnit;
+        chart.options.scales.x.time.displayFormats = {
+            hour: 'HH:mm',
+            day: 'MM/dd HH:mm'
+        };
+    });
+
     updateHistoryData();
 };
 
-// --- モックデータ生成 (テスト用) ---
-function generateMockCurrentData() {
-    return {
-        temperature: 20 + Math.random() * 5,
-        humidity: 40 + Math.random() * 20,
-        co2: 400 + Math.random() * 400,
-        timestamp: new Date().toISOString()
-    };
-}
 
-function generateMockHistoryData(hours) {
-    const data = [];
-    const now = new Date();
-    // データ点数を調整
-    const points = 100;
-    const interval = (hours * 60 * 60 * 1000) / points;
-
-    for (let i = points; i >= 0; i--) {
-        const time = new Date(now - i * interval);
-        data.push({
-            timestamp: time.toISOString(),
-            temperature: 22 + Math.sin(i / 10) * 2 + Math.random(),
-            humidity: 50 + Math.cos(i / 8) * 10 + Math.random() * 5,
-            co2: 600 + Math.sin(i / 20) * 200 + Math.random() * 50
-        });
-    }
-    return data;
-}
 
 // 初期化プロセス
 async function init() {
+    // ローディング表示
+    updateStatus('データ読み込み中...', false);
+    updateValue('current-temp', '---');
+    updateValue('current-humidity', '---');
+    updateValue('current-co2', '---');
+    
     initCharts();
     await updateCurrentValues();
     await updateHistoryData();
